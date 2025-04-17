@@ -1,1 +1,5 @@
+<<<<<<< HEAD
 DIT IS een test
+=======
+DIT IS EIEN test
+>>>>>>> dc7733e6e0e263c4e9c1e6a9080c8e4311e0fb35
