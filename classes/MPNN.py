@@ -19,10 +19,10 @@ class MPNN(nn.Module):
         edge_network = nn.Linear(edge_in_feats, hidden_feats * hidden_feats)
 
         self.gnn_layer = NNConv(
-            in_feats=hidden_feats,
-            out_feats=hidden_feats,
-            edge_func=edge_network,
-            aggregator_type='sum'
+            in_channels=hidden_feats,
+            out_channels=hidden_feats,
+            nn =edge_network,
+            aggregator_type='add'
         )
 
         self.activation = nn.ReLU()
