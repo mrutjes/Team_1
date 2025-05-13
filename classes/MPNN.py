@@ -22,7 +22,7 @@ class MPNN(nn.Module):
             in_channels=hidden_feats,
             out_channels=hidden_feats,
             nn =edge_network,
-            aggregator_type='add'
+            aggr= 'add'
         )
 
         self.activation = nn.ReLU()
