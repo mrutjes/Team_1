@@ -30,11 +30,17 @@ def evaluate_borylation_site(pred_logits, true_mask):
 def evaluate_reactivity(pred_score, true_score):
     pred = pred_score.detach().cpu().numpy()
     true = true_score.detach().cpu().numpy()
-    
+
     mse = mean_squared_error(true, pred)
-    spearman_corr = spearmanr(true, pred).correlation
-    pearson_corr = pearsonr(true, pred)[0]
-    
+
+    # Check op constante input
+    if len(set(true.flatten())) <= 1 or len(set(pred.flatten())) <= 1:
+        spearman_corr = float('nan')
+        pearson_corr = float('nan')
+    else:
+        spearman_corr = spearmanr(true, pred).correlation
+        pearson_corr = pearsonr(true, pred)[0]
+
     return {
         "react_MSE": mse,
         "react_Spearman": spearman_corr,
