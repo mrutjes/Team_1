@@ -35,9 +35,7 @@ class MPNN(nn.Module):
         self.node_regressor = nn.Linear(hidden_feats, 1)
 
         # Graph-level readout
-        self.readout = Set2Set(input_dim=hidden_feats * 2,
-                               n_iters=num_step_set2set,
-                               n_layers=num_layer_set2set)
+        self.readout = Set2Set(hidden_feats * 2, num_step_set2set)
 
         self.sparsify = nn.Sequential(
             nn.Linear(hidden_feats * 4, readout_feats), nn.PReLU()
