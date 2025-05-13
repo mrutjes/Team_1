@@ -20,7 +20,7 @@ class MolecularGraphFromSMILES:
             encoding[choices.index(value)] = 1
         return encoding
 
-    def to_pyg_data(self) -> Data:
+    def to_pyg_data(self, borylation_index: int, yield_value: float) -> Data:
         x = []
         for atom in self.atom_objects:
             symbol = atom.GetSymbol()
@@ -65,7 +65,25 @@ class MolecularGraphFromSMILES:
         edge_index = torch.tensor(edge_index, dtype=torch.long).t().contiguous()
         edge_attr = torch.tensor(edge_attr, dtype=torch.float)
 
-        return Data(x=x, edge_index=edge_index, edge_attr=edge_attr)
+        # borylation_mask: 1 op de juiste positie
+        borylation_mask = torch.zeros(len(self.atoms))
+        borylation_mask[borylation_index] = 1.0
+
+        # dummy reactivity: hier moet je later echte data invullen of voorspellen
+        reactivity = torch.zeros(len(self.atoms))
+
+        # maak data object
+        data = Data(
+            x=x,
+            edge_index=edge_index,
+            edge_attr=edge_attr,
+            y=torch.tensor([yield_value], dtype=torch.float),
+            borylation_mask=borylation_mask,
+            reactivity=reactivity
+        )
+
+        return data
+    
 
     def visualize(self, with_labels=True):
         G = nx.Graph()
