@@ -27,26 +27,6 @@ def evaluate_borylation_site(pred_logits, true_mask):
     }
 
 
-def evaluate_reactivity(pred_score, true_score):
-    pred = pred_score.detach().cpu().numpy()
-    true = true_score.detach().cpu().numpy()
-
-    mse = mean_squared_error(true, pred)
-
-    # Check op constante input
-    if len(set(true.flatten())) <= 1 or len(set(pred.flatten())) <= 1:
-        spearman_corr = float('nan')
-        pearson_corr = float('nan')
-    else:
-        spearman_corr = spearmanr(true, pred).correlation
-        pearson_corr = pearsonr(true, pred)[0]
-
-    return {
-        "react_MSE": mse,
-        "react_Spearman": spearman_corr,
-        "react_Pearson": pearson_corr
-    }
-
 def evaluate_model(model, dataloader, device):
     model.eval()
     
@@ -56,14 +36,11 @@ def evaluate_model(model, dataloader, device):
     all_site_logits = []
     all_site_masks = []
 
-    all_reactivity_pred = []
-    all_reactivity_true = []
-
     with torch.no_grad():
         for batch in dataloader:
             batch = batch.to(device)
 
-            p_borylation, reactivity_score, predicted_yield = model(
+            p_borylation, predicted_yield = model(
                 batch.x, batch.edge_index, batch.edge_attr, batch.batch
             )
 
@@ -75,24 +52,16 @@ def evaluate_model(model, dataloader, device):
             all_site_logits.append(p_borylation)
             all_site_masks.append(batch.borylation_mask)
 
-            # Reactivity
-            all_reactivity_pred.append(reactivity_score)
-            all_reactivity_true.append(batch.reactivity)
-
     # concat
     y_true = torch.cat(all_y_true).numpy()
     y_pred = torch.cat(all_y_pred).numpy()
     
     site_logits = torch.cat(all_site_logits)
     site_masks = torch.cat(all_site_masks)
-    
-    react_pred = torch.cat(all_reactivity_pred)
-    react_true = torch.cat(all_reactivity_true)
 
     # evaluate
     metrics = {}
     metrics.update(evaluate_yield(y_true, y_pred))
     metrics.update(evaluate_borylation_site(site_logits, site_masks))
-    metrics.update(evaluate_reactivity(react_pred, react_true))
 
     return metrics

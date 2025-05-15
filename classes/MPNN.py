@@ -80,11 +80,10 @@ class MPNN(nn.Module):
 
         # Node-level outputs
         p_borylation = self.node_classifier(node_feats).squeeze(-1)
-        reactivity_score = self.node_regressor(node_feats).squeeze(-1)
 
         # Graph-level output
         readout = self.readout(node_aggr_cat, batch)
         graph_feats = self.sparsify(readout)
         predicted_yield = self.yield_regressor(graph_feats).squeeze(-1)
 
-        return p_borylation, reactivity_score, predicted_yield
+        return p_borylation, predicted_yield
