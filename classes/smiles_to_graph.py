@@ -5,14 +5,49 @@ from rdkit import Chem
 import networkx as nx
 import matplotlib.pyplot as plt
 from helper.constants import ALLOWED_ATOMS, ELECTRONEGATIVITY, BOND_ORDER_MAP, BOND_TYPE_ENCODING
+from functions.data_loader import data_loader
 
 class MolecularGraphFromSMILES:
     def __init__(self, smiles: str):
         self.smiles = smiles
-        self.mol = Chem.MolFromSmiles(smiles)
+        self.smiles_new = self.add_atom_mapping_to_smiles()
+
+        self.df_merged = data_loader("data/compounds_yield.csv", "data/compounds_smiles.csv")
+        self.borylation_index = self.df_merged['borylation_site'].iloc[0]
+        self.yield_value = float(self.df_merged['yield'].iloc[0])
+        self.borylation_index = int(self.borylation_index)
+
+        self.mol = Chem.MolFromSmiles(self.smiles_new)
+
         self.atoms = [atom.GetSymbol() for atom in self.mol.GetAtoms()]
         self.atom_objects = [atom for atom in self.mol.GetAtoms()]
         self.bond_objects = [bond for bond in self.mol.GetBonds()]
+
+    def add_atom_mapping_to_smiles(self) -> str:
+        """
+        Voeg [atom map numbers] toe aan elk atoom in een SMILES-string, 
+        zodat de index in de SMILES overeenkomt met de atoomindex in de mol.
+        """
+        mol = Chem.MolFromSmiles(self.smiles)
+        for atom in mol.GetAtoms():
+            atom.SetAtomMapNum(atom.GetIdx())
+        
+        smiles_with_map = Chem.MolToSmiles(mol, canonical=False, isomericSmiles=False)
+
+        return smiles_with_map
+    
+    def get_smiles_to_graph_index_map(self) -> dict:
+        """
+        Maak een mapping van de atom map numbers (uit de SMILES) naar de interne RDKit atoomindex.
+        """
+        mapping = {}
+        for atom in self.mol.GetAtoms():
+            map_num = atom.GetAtomMapNum()
+            if map_num >= 0:
+                mapping[map_num] = atom.GetIdx()
+
+        return mapping
+
 
     def _one_hot(self, value, choices):
         encoding = [0] * len(choices)
@@ -20,20 +55,33 @@ class MolecularGraphFromSMILES:
             encoding[choices.index(value)] = 1
         return encoding
 
-    def to_pyg_data(self, borylation_index: int, yield_value: float) -> Data:
+    def to_pyg_data(self) -> Data:
+        # mapping: van originele SMILES-index naar RDKit-grafindex
+        mapping = self.get_smiles_to_graph_index_map()
+        graph_index = mapping[self.borylation_index]
+
+        print("SMILES index:", self.borylation_index)
+        mapping = self.get_smiles_to_graph_index_map()
+        print("Mapping:", mapping)
+        graph_index = mapping[self.borylation_index]
+        print("Graph index:", graph_index)
+
         x = []
-        for atom in self.atom_objects:
+        for i, atom in enumerate(self.atom_objects):
             symbol = atom.GetSymbol()
             one_hot_symbol = self._one_hot(symbol, ALLOWED_ATOMS)
             one_hot_aromatic = [int(atom.GetIsAromatic()), int(not atom.GetIsAromatic())]
+            is_borylation_site = [1] if i == graph_index else [0]
             feature_vector = (
                 one_hot_symbol +
                 one_hot_aromatic +
                 [atom.GetFormalCharge()] +
                 [int(atom.IsInRing())] +
-                [ELECTRONEGATIVITY.get(symbol, 0.0)]
+                [ELECTRONEGATIVITY.get(symbol, 0.0)] +
+                is_borylation_site
             )
             x.append(feature_vector)
+
         x = torch.tensor(x, dtype=torch.float)
 
         edge_index = []
@@ -44,7 +92,6 @@ class MolecularGraphFromSMILES:
             sym_i = self.atoms[i]
             sym_j = self.atoms[j]
 
-            # electronegativiteitsschatting voor bindingstype
             diff = abs(ELECTRONEGATIVITY.get(sym_i, 0) - ELECTRONEGATIVITY.get(sym_j, 0))
             if diff > 1.7:
                 bond_type = "ionic"
@@ -65,21 +112,15 @@ class MolecularGraphFromSMILES:
         edge_index = torch.tensor(edge_index, dtype=torch.long).t().contiguous()
         edge_attr = torch.tensor(edge_attr, dtype=torch.float)
 
-        # borylation_mask: 1 op de juiste positie
         borylation_mask = torch.zeros(len(self.atoms))
-        borylation_mask[borylation_index] = 1.0
+        borylation_mask[graph_index] = 1.0
 
-        # dummy reactivity: hier moet je later echte data invullen of voorspellen
-        reactivity = torch.zeros(len(self.atoms))
-
-        # maak data object
         data = Data(
             x=x,
             edge_index=edge_index,
             edge_attr=edge_attr,
-            y=torch.tensor([yield_value], dtype=torch.float),
-            borylation_mask=borylation_mask,
-            reactivity=reactivity
+            y=torch.tensor([self.yield_value], dtype=torch.float),
+            borylation_mask=borylation_mask
         )
 
         return data

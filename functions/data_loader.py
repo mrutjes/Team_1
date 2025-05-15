@@ -1,8 +1,14 @@
 import pandas as pd
 import re
 
-def data_loader(yields_path: str, smiles_path: str):
-    # --- 1. Parser voor opbrengsten: haal hoogste percentage uit tekstregels ---
+def data_loader(yields_path: str, smiles_path: str) -> pd.DataFrame:
+    """
+    Opens a csv file with yields and and one with SMILES strings, both connected by a compound_id.
+    Cleans the data and returns a dataframe with the compound_id, SMILES string, borylation site and yield.
+    Make sure that the borylation site is 0-based and the yield is a float.
+    Create a new dataframe merged on compound id. 
+    """
+
     yield_data = []
     with open(yields_path, "r") as f:
         for line in f:
@@ -19,7 +25,6 @@ def data_loader(yields_path: str, smiles_path: str):
 
     df_yields_clean = pd.DataFrame(yield_data, columns=["compound_id", "yield"])
 
-    # --- 2. Parser voor SMILES-bestand ---
     smiles_data = []
     with open(smiles_path, "r") as f:
         for line in f:
@@ -30,16 +35,11 @@ def data_loader(yields_path: str, smiles_path: str):
 
     df_smiles_clean = pd.DataFrame(smiles_data, columns=["compound_id", "smiles_raw", "borylation_site"])
 
-    # --- 3. Corrigeer 1-based borylation_site naar 0-based indexing ---
     df_smiles_clean["borylation_site"] = df_smiles_clean["borylation_site"].astype(int) - 1
 
-    # --- Optioneel: waarschuwing bij negatieve indices ---
-    if (df_smiles_clean["borylation_site"] < 0).any():
-        print("⚠️ Waarschuwing: negatieve borylation indices gevonden na -1 correctie!")
-
-    # --- 4. Merge datasets op compound_id ---
     df_merged = pd.merge(df_smiles_clean, df_yields_clean, on="compound_id", how="inner")
 
     df_merged["borylation_site"] = df_merged["borylation_site"].astype(int)
     df_merged["yield"] = df_merged["yield"].astype(float)
+    
     return df_merged
