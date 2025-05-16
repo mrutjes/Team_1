@@ -1,7 +1,7 @@
 import torch
 from functions.compute_loss import compute_loss
 
-def train_MPNN_model(model, dataloader, optimizer, device, pos_weight_val=15.0):
+def train_MPNN_model(model, dataloader, optimizer, device):
     model.train()
     total_loss = 0
     total_site_loss = 0
@@ -17,8 +17,7 @@ def train_MPNN_model(model, dataloader, optimizer, device, pos_weight_val=15.0):
 
         loss, l_site, l_yield = compute_loss(
             p_borylation, batch.borylation_mask.float(),
-            predicted_yield, batch.y,
-            pos_weight_val=pos_weight_val  # <- dit is optioneel
+            predicted_yield, batch.y
         )
 
         loss.backward()

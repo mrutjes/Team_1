@@ -26,6 +26,22 @@ def evaluate_borylation_site(pred_logits, true_mask):
         "site_AUC": roc_auc_score(true_mask, pred_probs) if len(set(true_mask)) > 1 else float("nan")
     }
 
+def topk_accuracy(p_borylation, borylation_mask, batch, k=3):
+    correct = 0
+    total = batch.max().item() + 1  # aantal grafen
+
+    for graph_id in range(total):
+        node_mask = (batch == graph_id)
+        preds = p_borylation[node_mask]
+        target = borylation_mask[node_mask]
+
+        topk = preds.topk(k).indices  # top k indices
+        true_index = target.argmax()  # de echte borylatie-index
+
+        if true_index in topk:
+            correct += 1
+
+    return correct / total
 
 def evaluate_model(model, dataloader, device):
     model.eval()

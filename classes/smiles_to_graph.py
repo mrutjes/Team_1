@@ -60,12 +60,6 @@ class MolecularGraphFromSMILES:
         mapping = self.get_smiles_to_graph_index_map()
         graph_index = mapping[self.borylation_index]
 
-        print("SMILES index:", self.borylation_index)
-        mapping = self.get_smiles_to_graph_index_map()
-        print("Mapping:", mapping)
-        graph_index = mapping[self.borylation_index]
-        print("Graph index:", graph_index)
-
         x = []
         for i, atom in enumerate(self.atom_objects):
             symbol = atom.GetSymbol()
