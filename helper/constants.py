@@ -1,4 +1,6 @@
 from rdkit import Chem
+from rdkit.Chem.rdchem import HybridizationType
+
 
 ALLOWED_ATOMS = ["H", "C", "N", "O", "S", "Br", "F", "Cl", "I", "Si", "B"]
 
@@ -19,3 +21,12 @@ BOND_TYPE_ENCODING = {
     "polar": 1,
     "ionic": 2
 }
+
+ALLOWED_HYBRIDIZATIONS = [
+    HybridizationType.SP, 
+    HybridizationType.SP2, 
+    HybridizationType.SP3, 
+    HybridizationType.SP3D, 
+    HybridizationType.SP3D2
+]
+

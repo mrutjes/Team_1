@@ -41,5 +41,11 @@ def data_loader(yields_path: str, smiles_path: str) -> pd.DataFrame:
 
     df_merged["borylation_site"] = df_merged["borylation_site"].astype(int)
     df_merged["yield"] = df_merged["yield"].astype(float)
+
+    mean_yield = df_merged['yield'].mean()
+    std_yield = df_merged['yield'].std()
+
+    df_merged['yield'] = (df_merged['yield'] - mean_yield) / std_yield
+
     
     return df_merged

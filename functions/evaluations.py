@@ -80,4 +80,4 @@ def evaluate_model(model, dataloader, device):
     metrics.update(evaluate_yield(y_true, y_pred))
     metrics.update(evaluate_borylation_site(site_logits, site_masks))
 
-    return metrics
+    return metrics, y_true, y_pred

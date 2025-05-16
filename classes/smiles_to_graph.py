@@ -4,7 +4,7 @@ from torch_geometric.data import Data
 from rdkit import Chem
 import networkx as nx
 import matplotlib.pyplot as plt
-from helper.constants import ALLOWED_ATOMS, ELECTRONEGATIVITY, BOND_ORDER_MAP, BOND_TYPE_ENCODING
+from helper.constants import ALLOWED_ATOMS, ELECTRONEGATIVITY, BOND_ORDER_MAP, BOND_TYPE_ENCODING, ALLOWED_HYBRIDIZATIONS
 from functions.data_loader import data_loader
 
 class MolecularGraphFromSMILES:
@@ -66,13 +66,25 @@ class MolecularGraphFromSMILES:
             one_hot_symbol = self._one_hot(symbol, ALLOWED_ATOMS)
             one_hot_aromatic = [int(atom.GetIsAromatic()), int(not atom.GetIsAromatic())]
             is_borylation_site = [1] if i == graph_index else [0]
+
+            hybrid = atom.GetHybridization()
+            one_hot_hybrid = self._one_hot(hybrid, ALLOWED_HYBRIDIZATIONS)
+
+            # Extra numerieke features
+            valence = atom.GetTotalValence()
+            num_Hs = atom.GetTotalNumHs()
+            mass = atom.GetMass() / 200  # normaal tussen 0–1
+            degree = atom.GetDegree()
+
             feature_vector = (
                 one_hot_symbol +
                 one_hot_aromatic +
                 [atom.GetFormalCharge()] +
                 [int(atom.IsInRing())] +
                 [ELECTRONEGATIVITY.get(symbol, 0.0)] +
-                is_borylation_site
+                is_borylation_site +
+                one_hot_hybrid +
+                [valence, num_Hs, mass, degree]
             )
             x.append(feature_vector)
 
