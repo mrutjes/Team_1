@@ -6,13 +6,22 @@ from sklearn.metrics import (
 from scipy.stats import spearmanr, pearsonr
 
 def evaluate_yield(y_true, y_pred):
+    """
+    Evaluates the yield predictions (y_pred) against the ground truth (y_true).
+    Returns a dictionary with MSE, MAE, and R2 scores as a dict.
+    """
+
     mse = mean_squared_error(y_true, y_pred)
     mae = mean_absolute_error(y_true, y_pred)
     r2 = r2_score(y_true, y_pred)
+
     return {"yield_MSE": mse, "yield_MAE": mae, "yield_R2": r2}
 
 
 def evaluate_borylation_site(pred_logits, true_mask):
+    """
+    Evaluates binary classification performance for predicted borylation sites at the node level.
+    """
     pred_probs = torch.sigmoid(pred_logits).detach().cpu().numpy()
     true_mask = true_mask.detach().cpu().numpy()
     
@@ -21,22 +30,24 @@ def evaluate_borylation_site(pred_logits, true_mask):
     return {
         "site_Accuracy": accuracy_score(true_mask, pred_binary),
         "site_Precision": precision_score(true_mask, pred_binary, zero_division=0),
-        "site_Recall": recall_score(true_mask, pred_binary, zero_division=0),
-        "site_F1": f1_score(true_mask, pred_binary, zero_division=0),
         "site_AUC": roc_auc_score(true_mask, pred_probs) if len(set(true_mask)) > 1 else float("nan")
     }
 
 def topk_accuracy(p_borylation, borylation_mask, batch, k=3):
+    """
+    Computes the top-k accuracy for borylation site predictions.
+    """
+
     correct = 0
-    total = batch.max().item() + 1  # aantal grafen
+    total = batch.max().item() + 1
 
     for graph_id in range(total):
         node_mask = (batch == graph_id)
         preds = p_borylation[node_mask]
         target = borylation_mask[node_mask]
 
-        topk = preds.topk(k).indices  # top k indices
-        true_index = target.argmax()  # de echte borylatie-index
+        topk = preds.topk(k).indices
+        true_index = target.argmax()
 
         if true_index in topk:
             correct += 1
@@ -44,6 +55,11 @@ def topk_accuracy(p_borylation, borylation_mask, batch, k=3):
     return correct / total
 
 def evaluate_model(model, dataloader, device):
+    """
+    Evaluates the model on a dataset for both graph-level yield prediction and 
+    node-level borylation site prediction.
+    """
+
     model.eval()
     
     all_y_true = []

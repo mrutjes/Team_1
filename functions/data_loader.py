@@ -46,6 +46,5 @@ def data_loader(yields_path: str, smiles_path: str) -> pd.DataFrame:
     std_yield = df_merged['yield'].std()
 
     df_merged['yield'] = (df_merged['yield'] - mean_yield) / std_yield
-
     
     return df_merged

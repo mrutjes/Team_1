@@ -1,6 +1,9 @@
 from rdkit import Chem
 from rdkit.Chem.rdchem import HybridizationType
 
+# -------------------------------------------------------------
+# These are the constants used throughout the codebase.
+# -------------------------------------------------------------
 
 ALLOWED_ATOMS = ["H", "C", "N", "O", "S", "Br", "F", "Cl", "I", "Si", "B"]
 

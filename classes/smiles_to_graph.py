@@ -8,7 +8,17 @@ from helper.constants import ALLOWED_ATOMS, ELECTRONEGATIVITY, BOND_ORDER_MAP, B
 from functions.data_loader import data_loader
 
 class MolecularGraphFromSMILES:
+    """
+    Converts a SMILES string into a graph representation suitable for GNN models,
+    with annotated borylation site and computed yield value.
+    """
+
     def __init__(self, smiles: str):
+        """
+        Initializes the object with a SMILES string, adds atom mapping, 
+        loads yield and borylation data, and builds the RDKit molecule.
+        """
+
         self.smiles = smiles
         self.smiles_new = self.add_atom_mapping_to_smiles()
 
@@ -23,11 +33,13 @@ class MolecularGraphFromSMILES:
         self.atom_objects = [atom for atom in self.mol.GetAtoms()]
         self.bond_objects = [bond for bond in self.mol.GetBonds()]
 
+
     def add_atom_mapping_to_smiles(self) -> str:
         """
-        Voeg [atom map numbers] toe aan elk atoom in een SMILES-string, 
-        zodat de index in de SMILES overeenkomt met de atoomindex in de mol.
+        Adds atom mapping numbers to each atom in the SMILES 
+        string to match SMILES and RDKit indices, to make sure these align.
         """
+
         mol = Chem.MolFromSmiles(self.smiles)
         for atom in mol.GetAtoms():
             atom.SetAtomMapNum(atom.GetIdx())
@@ -36,9 +48,10 @@ class MolecularGraphFromSMILES:
 
         return smiles_with_map
     
+    
     def get_smiles_to_graph_index_map(self) -> dict:
         """
-        Maak een mapping van de atom map numbers (uit de SMILES) naar de interne RDKit atoomindex.
+        Returns a mapping from SMILES atom map numbers to RDKit atom indices.
         """
         mapping = {}
         for atom in self.mol.GetAtoms():
@@ -50,13 +63,22 @@ class MolecularGraphFromSMILES:
 
 
     def _one_hot(self, value, choices):
+        """
+        Returns a one-hot encoded vector for a given value from a list of choices.
+        """
+
         encoding = [0] * len(choices)
         if value in choices:
             encoding[choices.index(value)] = 1
         return encoding
 
+
     def to_pyg_data(self) -> Data:
-        # mapping: van originele SMILES-index naar RDKit-grafindex
+        """    
+        Converts the molecule to a PyTorch Geometric Data object with atom and bond features, 
+        including a borylation mask and yield label.
+        """
+
         mapping = self.get_smiles_to_graph_index_map()
         graph_index = mapping[self.borylation_index]
 
@@ -70,7 +92,6 @@ class MolecularGraphFromSMILES:
             hybrid = atom.GetHybridization()
             one_hot_hybrid = self._one_hot(hybrid, ALLOWED_HYBRIDIZATIONS)
 
-            # Extra numerieke features
             valence = atom.GetTotalValence()
             num_Hs = atom.GetTotalNumHs()
             mass = atom.GetMass() / 200  # normaal tussen 0–1
@@ -133,6 +154,10 @@ class MolecularGraphFromSMILES:
     
 
     def visualize(self, with_labels=True):
+        """
+        Visualizes the molecular graph using NetworkX with atoms as nodes and bonds as edges.
+        """
+
         G = nx.Graph()
         for i, el in enumerate(self.atoms):
             G.add_node(i, label=el)
