@@ -94,7 +94,7 @@ class MolecularGraphFromSMILES:
 
             valence = atom.GetTotalValence()
             num_Hs = atom.GetTotalNumHs()
-            mass = atom.GetMass() / 200  # normaal tussen 0–1
+            mass = atom.GetMass() / 200  
             degree = atom.GetDegree()
 
             feature_vector = (
