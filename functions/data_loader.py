@@ -30,7 +30,7 @@ def data_loader(yields_path: str, smiles_path: str) -> pd.DataFrame:
         for line in f:
             parts = [p.strip() for p in line.strip().split(",")]
             if len(parts) == 4:
-                compound_id, smiles_raw, borylation_index, _ = parts  # negeer genormaliseerde SMILES
+                compound_id, smiles_raw, borylation_index, _ = parts
                 smiles_data.append((compound_id, smiles_raw, borylation_index))
 
     df_smiles_clean = pd.DataFrame(smiles_data, columns=["compound_id", "smiles_raw", "borylation_site"])
@@ -42,9 +42,8 @@ def data_loader(yields_path: str, smiles_path: str) -> pd.DataFrame:
     df_merged["borylation_site"] = df_merged["borylation_site"].astype(int)
     df_merged["yield"] = df_merged["yield"].astype(float)
 
-    mean_yield = df_merged['yield'].mean()
-    std_yield = df_merged['yield'].std()
+    yield_min = df_merged['yield'].min()
+    yield_max = df_merged['yield'].max()
+    df_merged['yield_norm'] = (df_merged['yield'] - yield_min) / (yield_max - yield_min)
 
-    df_merged['yield'] = (df_merged['yield'] - mean_yield) / std_yield
-    
-    return df_merged
+    return df_merged, yield_min, yield_max

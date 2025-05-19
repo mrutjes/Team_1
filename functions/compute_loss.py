@@ -9,6 +9,7 @@ def compute_loss(p_borylation, borylation_mask, predicted_yield, true_yield,
     """
 
     pos_weight = torch.tensor([pos_weight_val], device=p_borylation.device)
+    
     loss_site = nn.BCEWithLogitsLoss(pos_weight=pos_weight)(p_borylation, borylation_mask)
 
     loss_yield = nn.MSELoss()(predicted_yield, true_yield)

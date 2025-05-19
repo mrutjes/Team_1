@@ -22,12 +22,19 @@ class MolecularGraphFromSMILES:
         self.smiles = smiles
         self.smiles_new = self.add_atom_mapping_to_smiles()
 
-        self.df_merged = data_loader("data/compounds_yield.csv", "data/compounds_smiles.csv")
-        self.df_idx = self.df_merged.index[self.df_merged['smiles_raw'] == smiles]
-        self.df_index = int(self.df_idx[0])
-        self.borylation_index = self.df_merged['borylation_site'].iloc[self.df_index]
-        self.yield_value = float(self.df_merged['yield'].iloc[0])
-        self.borylation_index = int(self.borylation_index)
+        self.df_merged, self.mean_yield, self.std_yield = data_loader("data/compounds_yield.csv", "data/compounds_smiles.csv")
+        
+        if self.df_merged['smiles_raw'].str.contains(self.smiles, regex=False).any():
+            self.df_idx = self.df_merged.index[self.df_merged['smiles_raw'] == smiles]
+            self.df_index = int(self.df_idx[0])
+            self.borylation_index = int(self.df_merged['borylation_site'].iloc[self.df_index])
+            self.yield_value = (float(self.df_merged['yield'].iloc[self.df_index]) - self.mean_yield) / self.std_yield
+
+        else:
+            print(f"SMILES {self.smiles} not found in the dataset.")
+            self.df_index = None
+            self.borylation_index = None
+            self.yield_value = 0.0
 
         self.mol = Chem.MolFromSmiles(self.smiles_new)
 
@@ -81,15 +88,20 @@ class MolecularGraphFromSMILES:
         including a borylation mask and yield label.
         """
 
+        # mapping = {atom map num → RDKit index}
         mapping = self.get_smiles_to_graph_index_map()
-        graph_index = mapping[self.borylation_index]
+
+        if self.borylation_index in mapping:
+            graph_index = mapping[self.borylation_index]
+        else:
+            raise ValueError(f"Borylation index {self.borylation_index} not found in atom mapping.")
 
         x = []
         for i, atom in enumerate(self.atom_objects):
             symbol = atom.GetSymbol()
             one_hot_symbol = self._one_hot(symbol, ALLOWED_ATOMS)
             one_hot_aromatic = [int(atom.GetIsAromatic()), int(not atom.GetIsAromatic())]
-            is_borylation_site = [1] if i == graph_index else [0]
+            is_borylation_site = [1] if (graph_index is not None and i == graph_index) else [0]
 
             hybrid = atom.GetHybridization()
             one_hot_hybrid = self._one_hot(hybrid, ALLOWED_HYBRIDIZATIONS)
@@ -142,7 +154,8 @@ class MolecularGraphFromSMILES:
         edge_attr = torch.tensor(edge_attr, dtype=torch.float)
 
         borylation_mask = torch.zeros(len(self.atoms))
-        borylation_mask[graph_index] = 1.0
+        if graph_index is not None:
+            borylation_mask[graph_index] = 1.0
 
         data = Data(
             x=x,

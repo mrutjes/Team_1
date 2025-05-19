@@ -34,8 +34,10 @@ def train_MPNN_model(model, dataloader, optimizer, device):
         )
 
         loss, l_site, l_yield = compute_loss(
-            p_borylation, batch.borylation_mask.float(),
-            predicted_yield, batch.y
+            p_borylation, 
+            batch.borylation_mask.float(),
+            predicted_yield,
+            batch.y
         )
 
         loss.backward()
