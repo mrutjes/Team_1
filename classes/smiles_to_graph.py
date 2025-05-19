@@ -23,7 +23,9 @@ class MolecularGraphFromSMILES:
         self.smiles_new = self.add_atom_mapping_to_smiles()
 
         self.df_merged = data_loader("data/compounds_yield.csv", "data/compounds_smiles.csv")
-        self.borylation_index = self.df_merged['borylation_site'].iloc[0]
+        self.df_idx = self.df_merged.index[self.df_merged['smiles_raw'] == smiles]
+        self.df_index = int(self.df_idx[0])
+        self.borylation_index = self.df_merged['borylation_site'].iloc[self.df_index]
         self.yield_value = float(self.df_merged['yield'].iloc[0])
         self.borylation_index = int(self.borylation_index)
 
