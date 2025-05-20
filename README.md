@@ -2,9 +2,9 @@
 
 ## Authors
 
-- Carlijn Pool [student id]
+- Carlijn Pool 13290355
 - Max Rutjes 13826867
-- Nora Straub [student id]
+- Nora Straub 14008521
 
 _____
 
