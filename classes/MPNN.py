@@ -79,9 +79,10 @@ class MPNN(nn.Module):
         self.yield_regressor = nn.Sequential(
             nn.Linear(readout_feats, 128), nn.ReLU(),
             nn.Linear(128, 1),
+            nn.Sigmoid(),
             nn.Dropout(dropout),
         )
-
+    
     def _get_activation_fn(self, name):
         activations = {
             'relu': nn.ReLU(),
@@ -128,5 +129,7 @@ class MPNN(nn.Module):
         readout = global_mean_pool(node_aggr_cat, batch)
         graph_feats = self.sparsify(readout)
         predicted_yield = self.yield_regressor(graph_feats).squeeze(-1)
+
+
 
         return p_borylation, predicted_yield
